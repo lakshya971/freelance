@@ -1,0 +1,113 @@
+{
+  "name": "Project",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Project title"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "ID of the client this project is for"
+    },
+    "proposal_id": {
+      "type": "string",
+      "description": "Related proposal ID"
+    },
+    "description": {
+      "type": "string",
+      "description": "Project description"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planning",
+        "active",
+        "on_hold",
+        "completed",
+        "cancelled"
+      ],
+      "default": "planning",
+      "description": "Project status"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "urgent"
+      ],
+      "default": "medium",
+      "description": "Project priority"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Project start date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Project end date"
+    },
+    "budget": {
+      "type": "number",
+      "description": "Project budget"
+    },
+    "progress": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Project progress percentage"
+    },
+    "milestones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completed": {
+            "type": "boolean",
+            "default": false
+          },
+          "completed_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "description": "Project milestones"
+    },
+    "last_update_sent": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of last progress update sent"
+    },
+    "update_frequency": {
+      "type": "string",
+      "enum": [
+        "weekly",
+        "biweekly",
+        "monthly",
+        "milestone"
+      ],
+      "default": "weekly",
+      "description": "Frequency of progress updates"
+    }
+  },
+  "required": [
+    "title",
+    "client_id"
+  ]
+}

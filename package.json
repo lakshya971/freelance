@@ -1,0 +1,28 @@
+{
+  "name": "freelanceflow",
+  "version": "1.0.0",
+  "description": "The Ultimate Workflow OS for Freelancers & Solo Creators",
+  "main": "server/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && node server.js",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "mongodb": "^6.18.0",
+    "mongoose": "^8.16.5"
+  },
+  "keywords": [
+    "freelance",
+    "saas",
+    "ai",
+    "proposals",
+    "workflow"
+  ],
+  "author": "FreelanceFlow Team",
+  "license": "MIT"
+}

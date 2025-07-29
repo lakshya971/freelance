@@ -1,0 +1,111 @@
+{
+  "name": "Invoice",
+  "type": "object",
+  "properties": {
+    "invoice_number": {
+      "type": "string",
+      "description": "Unique invoice number"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "ID of the client this invoice is for"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Related project ID"
+    },
+    "title": {
+      "type": "string",
+      "description": "Invoice title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Invoice description"
+    },
+    "line_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "rate": {
+            "type": "number"
+          },
+          "amount": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Invoice line items"
+    },
+    "subtotal": {
+      "type": "number",
+      "description": "Subtotal amount"
+    },
+    "tax_rate": {
+      "type": "number",
+      "default": 0,
+      "description": "Tax rate percentage"
+    },
+    "tax_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Tax amount"
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "Total invoice amount"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD",
+      "description": "Currency for the invoice"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent",
+        "paid",
+        "overdue",
+        "cancelled"
+      ],
+      "default": "draft",
+      "description": "Invoice status"
+    },
+    "issue_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Invoice issue date"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Invoice due date"
+    },
+    "paid_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date invoice was paid"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    },
+    "payment_terms": {
+      "type": "string",
+      "default": "Net 30",
+      "description": "Payment terms"
+    }
+  },
+  "required": [
+    "invoice_number",
+    "client_id",
+    "total_amount"
+  ]
+}

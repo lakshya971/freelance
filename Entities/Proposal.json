@@ -1,0 +1,93 @@
+{
+  "name": "Proposal",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Proposal title"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "ID of the client this proposal is for"
+    },
+    "description": {
+      "type": "string",
+      "description": "Project description"
+    },
+    "scope": {
+      "type": "string",
+      "description": "Detailed scope of work"
+    },
+    "deliverables": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of deliverables"
+    },
+    "timeline": {
+      "type": "string",
+      "description": "Project timeline"
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "Total proposal amount"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD",
+      "description": "Currency for the proposal"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent",
+        "viewed",
+        "accepted",
+        "rejected"
+      ],
+      "default": "draft",
+      "description": "Proposal status"
+    },
+    "sent_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date proposal was sent"
+    },
+    "viewed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date proposal was first viewed"
+    },
+    "accepted_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date proposal was accepted"
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date",
+      "description": "Proposal expiration date"
+    },
+    "terms": {
+      "type": "string",
+      "description": "Terms and conditions"
+    },
+    "signature_required": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether signature is required"
+    },
+    "signed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether proposal is signed"
+    }
+  },
+  "required": [
+    "title",
+    "client_id",
+    "total_amount"
+  ]
+}
