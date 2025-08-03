@@ -1,22 +1,33 @@
+import dotenv from 'dotenv';
+// Load environment variables FIRST before importing anything else
+dotenv.config();
+
+// Debug environment variables loading
+console.log('🔧 Environment variables after dotenv.config():');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('STRIPE_SECRET_KEY exists:', !!process.env.STRIPE_SECRET_KEY);
+console.log('STRIPE_SECRET_KEY preview:', process.env.STRIPE_SECRET_KEY?.substring(0, 10) + '...');
+console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
+console.log('OPENAI_API_KEY preview:', process.env.OPENAI_API_KEY?.substring(0, 10) + '...');
+
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
-// Import routes
+// Import routes AFTER env variables are loaded
 import authRoutes from './routes/auth.js';
 import proposalRoutes from './routes/proposals.js';
 import userRoutes from './routes/users.js';
+import aiRoutes from './routes/ai.js';
 
 import stripeRoutes from './routes/stripe.js';
 import clientRoutes from './routes/clients.js';
 import projectRoutes from './routes/projects.js';
 import invoiceRoutes from './routes/invoices.js';
 import chatRoutes from './routes/chat.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -35,6 +46,9 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// Stripe webhook needs raw body, so handle it before JSON parsing
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -48,7 +62,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/api/auth', authRoutes);
 app.use('/api/proposals', proposalRoutes);
 app.use('/api/users', userRoutes);
-
+app.use('/api/ai', aiRoutes);
 
 app.use('/api/clients', clientRoutes);
 app.use('/api/projects', projectRoutes);

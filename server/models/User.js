@@ -60,7 +60,7 @@ const userSchema = new mongoose.Schema({
     },
     proposalsLimit: {
       type: Number,
-      default: 1 // Free tier gets 1 proposal
+      default: 5 // Free tier gets 5 proposals for testing
     }
   },
   isVerified: {

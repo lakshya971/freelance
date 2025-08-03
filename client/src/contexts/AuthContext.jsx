@@ -19,10 +19,17 @@ export const AuthProvider = ({ children }) => {
 
   // Configure axios defaults
   useEffect(() => {
+    // Set base URL for API calls
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    axios.defaults.baseURL = apiUrl;
+    console.log('🔧 Axios configured with baseURL:', apiUrl);
+    
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      console.log('🔑 Authorization header set with token');
     } else {
       delete axios.defaults.headers.common['Authorization']
+      console.log('🚫 Authorization header removed');
     }
   }, [token])
 

@@ -1,10 +1,12 @@
+import axios from 'axios';
+
 export const Client = {
   list: async () => {
     try {
-      const res = await fetch('/api/clients', { credentials: 'include' });
-      const data = await res.json();
-      return data.clients || [];
+      const res = await axios.get('/api/clients');
+      return res.data.clients || [];
     } catch (e) {
+      console.error('Client list error:', e);
       return [];
     }
   }

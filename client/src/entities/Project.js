@@ -1,23 +1,21 @@
+import axios from 'axios';
+
 export const Project = {
   list: async () => {
     try {
-      const res = await fetch('/api/projects', { credentials: 'include' });
-      const data = await res.json();
-      return data.projects || [];
+      const res = await axios.get('/api/projects');
+      return res.data.projects || [];
     } catch (e) {
+      console.error('Project list error:', e);
       return [];
     }
   },
   create: async (project) => {
     try {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(project)
-      });
-      return await res.json();
+      const res = await axios.post('/api/projects', project);
+      return res.data;
     } catch (e) {
+      console.error('Project create error:', e);
       return { error: true };
     }
   }

@@ -35,6 +35,18 @@ const ProposalGenerator = () => {
   const canCreateProposal = user?.subscription?.proposalsUsed < user?.subscription?.proposalsLimit || user?.subscription?.proposalsLimit === -1
   const remainingProposals = user?.subscription?.proposalsLimit === -1 ? 'unlimited' : user?.subscription?.proposalsLimit - user?.subscription?.proposalsUsed
 
+  // Temporary function to reset proposal usage for testing
+  const resetProposalUsage = async () => {
+    try {
+      await axios.post('/api/ai/reset-usage')
+      toast.success('Proposal usage reset! Please refresh the page.')
+      // Refresh user data
+      window.location.reload()
+    } catch (error) {
+      toast.error('Error resetting usage')
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     
@@ -146,6 +158,16 @@ const ProposalGenerator = () => {
               You've used all your free proposals. Upgrade to a paid plan to continue generating 
               unlimited professional proposals with AI.
             </p>
+            
+            {/* Temporary Reset Button for Testing */}
+            <div className="mb-6">
+              <button
+                onClick={resetProposalUsage}
+                className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors mr-4"
+              >
+                🔧 Reset Usage (Testing)
+              </button>
+            </div>
             <button
               onClick={() => navigate('/pricing')}
               className="btn-primary"
