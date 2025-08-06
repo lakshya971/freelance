@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import DeleteConfirmationModal from '../components/Shared/DeleteConfirmationModal'
+import ProposalViewer from '../components/Proposals/ProposalViewer'
 
 const Proposals = () => {
   const { user } = useAuth()
@@ -28,6 +30,8 @@ const Proposals = () => {
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedProposal, setSelectedProposal] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [deleteModal, setDeleteModal] = useState({ open: false, proposal: null })
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     fetchProposals()
@@ -39,7 +43,20 @@ const Proposals = () => {
       setProposals(response.data.proposals || [])
     } catch (error) {
       console.error('Error fetching proposals:', error)
-      toast.error('Failed to load proposals')
+      
+      // Handle different types of errors
+      if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+        toast.error('Unable to connect to server. Please ensure the server is running.')
+      } else if (error.response?.status === 401) {
+        toast.error('Authentication required. Please log in.')
+      } else if (error.response?.status === 403) {
+        toast.error('Access denied. Please check your permissions.')
+      } else {
+        toast.error('Failed to load proposals. Please try refreshing the page.')
+      }
+      
+      // Set empty array so UI shows "no proposals" state instead of loading forever
+      setProposals([])
     } finally {
       setLoading(false)
     }
@@ -47,7 +64,7 @@ const Proposals = () => {
 
   const handleDownloadPDF = async (proposal) => {
     try {
-      toast.loading('Generating PDF...', { id: 'pdf-generation' })
+      toast.loading('Generating professional PDF...', { id: 'pdf-generation' })
       
       // Use jsPDF to generate PDF
       const { jsPDF } = await import('jspdf')
@@ -56,79 +73,142 @@ const Proposals = () => {
       // Set font
       doc.setFont('helvetica')
       
-      // Add company header/logo area
-      doc.setFillColor(34, 197, 94) // Green color
-      doc.rect(0, 0, 210, 25, 'F')
+      // Header section with FreelanceFlow branding
+      doc.setFillColor(37, 99, 235) // Blue color
+      doc.rect(0, 0, 210, 30, 'F')
       
-      // Title
-      doc.setFontSize(24)
+      // FreelanceFlow title
+      doc.setFontSize(20)
       doc.setTextColor(255, 255, 255) // White text
-      doc.text('FREELANCEFLOW PROPOSAL', 20, 18)
+      doc.text('FREELANCEFLOW', 20, 20)
+      
+      // Professional Proposal subtitle
+      doc.setFontSize(12)
+      doc.text('Professional Proposal', 140, 20)
+      
+      // Company name in top right if exists
+      if (proposal.client.company) {
+        doc.setFontSize(10)
+        doc.setTextColor(255, 255, 255)
+        doc.text(proposal.client.company, 20, 25)
+      }
       
       // Reset text color
       doc.setTextColor(0, 0, 0)
       
       // Client info section
-      doc.setFontSize(16)
-      doc.setTextColor(34, 197, 94)
-      doc.text('CLIENT INFORMATION', 20, 45)
+      let yPosition = 45
+      doc.setFontSize(14)
+      doc.setTextColor(37, 99, 235)
+      doc.text('PROPOSAL FOR', 20, yPosition)
       
+      yPosition += 10
       doc.setFontSize(12)
       doc.setTextColor(0, 0, 0)
-      doc.text(`Client: ${proposal.client.name}`, 20, 60)
+      doc.text(`Client: ${proposal.client.name}`, 20, yPosition)
+      
       if (proposal.client.company) {
-        doc.text(`Company: ${proposal.client.company}`, 20, 70)
+        yPosition += 7
+        doc.text(`Company: ${proposal.client.company}`, 20, yPosition)
       }
-      doc.text(`Email: ${proposal.client.email}`, 20, 80)
-      doc.text(`Date: ${new Date(proposal.createdAt).toLocaleDateString()}`, 20, 90)
       
-      // Project details section
-      doc.setFontSize(16)
-      doc.setTextColor(34, 197, 94)
-      doc.text('PROJECT DETAILS', 20, 110)
+      yPosition += 7
+      doc.text(`Email: ${proposal.client.email}`, 20, yPosition)
       
-      doc.setFontSize(12)
-      doc.setTextColor(0, 0, 0)
-      doc.text(`Budget: $${proposal.project.budget.amount.toLocaleString()}`, 20, 125)
-      doc.text(`Timeline: ${proposal.project.timeline}`, 20, 135)
-      doc.text(`Description: ${proposal.project.description.substring(0, 100)}...`, 20, 145)
+      yPosition += 7
+      doc.text(`Date: ${new Date(proposal.createdAt).toLocaleDateString()}`, 20, yPosition)
+      
+      // Project summary box
+      yPosition += 15
+      doc.setFillColor(248, 250, 252)
+      doc.rect(20, yPosition, 170, 25, 'F')
+      doc.setDrawColor(226, 232, 240)
+      doc.rect(20, yPosition, 170, 25, 'S')
+      
+      yPosition += 8
+      doc.setFontSize(10)
+      doc.setTextColor(71, 85, 105)
+      doc.text(`Budget: $${proposal.project.budget.amount.toLocaleString()}`, 25, yPosition)
+      doc.text(`Timeline: ${proposal.project.timeline}`, 100, yPosition)
+      
+      yPosition += 6
+      const description = proposal.project.description.length > 80 
+        ? proposal.project.description.substring(0, 80) + '...'
+        : proposal.project.description
+      doc.text(`Description: ${description}`, 25, yPosition)
       
       // Proposal content section
-      doc.setFontSize(16)
-      doc.setTextColor(34, 197, 94)
-      doc.text('PROPOSAL CONTENT', 20, 165)
+      yPosition += 20
+      doc.setFontSize(14)
+      doc.setTextColor(37, 99, 235)
+      doc.text('PROPOSAL CONTENT', 20, yPosition)
       
+      yPosition += 10
       doc.setFontSize(10)
       doc.setTextColor(0, 0, 0)
       
-      // Split content into lines that fit the page
-      const splitContent = doc.splitTextToSize(proposal.content, 170)
-      let yPosition = 180
+      // Process content to handle formatting
+      const content = proposal.content
+      const sections = content.split('---').filter(section => section.trim())
       
-      splitContent.forEach((line, index) => {
-        if (yPosition > 280) { // Check if we need a new page
-          doc.addPage()
-          yPosition = 20
+      sections.forEach((section) => {
+        const trimmedSection = section.trim()
+        const lines = trimmedSection.split('\n').filter(line => line.trim())
+        
+        if (lines.length === 0) return
+        
+        // Check if this is a section header
+        const firstLine = lines[0]
+        if (firstLine && firstLine === firstLine.toUpperCase() && !firstLine.includes(':') && firstLine.length < 50) {
+          // Add section header
+          if (yPosition > 270) {
+            doc.addPage()
+            yPosition = 20
+          }
+          
+          yPosition += 5
+          doc.setFontSize(12)
+          doc.setTextColor(37, 99, 235)
+          doc.text(firstLine, 20, yPosition)
+          
+          yPosition += 8
+          doc.setFontSize(10)
+          doc.setTextColor(0, 0, 0)
+          
+          // Add section content
+          lines.slice(1).forEach((line) => {
+            if (!line.trim()) return
+            
+            if (yPosition > 270) {
+              doc.addPage()
+              yPosition = 20
+            }
+            
+            const wrappedLines = doc.splitTextToSize(line.trim(), 170)
+            wrappedLines.forEach((wrappedLine) => {
+              doc.text(wrappedLine, 20, yPosition)
+              yPosition += 5
+            })
+          })
         }
-        doc.text(line, 20, yPosition)
-        yPosition += 5
       })
       
-      // Add footer
+      // Add footer to all pages
       const pageCount = doc.internal.getNumberOfPages()
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i)
         doc.setFontSize(8)
         doc.setTextColor(128, 128, 128)
         doc.text(`Page ${i} of ${pageCount}`, 20, 290)
-        doc.text('Generated by FreelanceFlow', 150, 290)
+        doc.text('Generated by FreelanceFlow AI', 140, 290)
+        doc.text(`Proposal ID: ${proposal._id.slice(-8)}`, 20, 285)
       }
       
       // Save PDF
       const fileName = `proposal-${proposal.client.name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`
       doc.save(fileName)
       
-      toast.success('PDF downloaded successfully!', { id: 'pdf-generation' })
+      toast.success('Professional PDF downloaded successfully!', { id: 'pdf-generation' })
     } catch (error) {
       console.error('Error generating PDF:', error)
       toast.error('Failed to generate PDF', { id: 'pdf-generation' })
@@ -141,14 +221,31 @@ const Proposals = () => {
   }
 
   const handleDeleteProposal = async (proposalId) => {
-    if (!window.confirm('Are you sure you want to delete this proposal?')) return
+    const proposal = proposals.find(p => p._id === proposalId)
+    if (!proposal) return
     
+    setDeleteModal({ open: true, proposal })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteModal.proposal) return
+    
+    setDeleting(true)
     try {
-      await axios.delete(`/api/proposals/${proposalId}`)
-      setProposals(proposals.filter(p => p._id !== proposalId))
+      await axios.delete(`/api/proposals/${deleteModal.proposal._id}`)
+      setProposals(proposals.filter(p => p._id !== deleteModal.proposal._id))
       toast.success('Proposal deleted successfully')
+      setDeleteModal({ open: false, proposal: null })
+      
+      // Close preview if the deleted proposal was being previewed
+      if (selectedProposal?._id === deleteModal.proposal._id) {
+        setShowPreview(false)
+      }
     } catch (error) {
+      console.error('Error deleting proposal:', error)
       toast.error('Failed to delete proposal')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -249,15 +346,23 @@ const Proposals = () => {
                 : 'Try adjusting your search or filter criteria.'
               }
             </p>
-            {proposals.length === 0 && (
-              <Link
-                to="/proposal-generator"
-                className="inline-flex items-center px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium"
+            <div className="flex items-center justify-center gap-4">
+              {proposals.length === 0 && (
+                <Link
+                  to="/proposal-generator"
+                  className="inline-flex items-center px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium"
+                >
+                  <Sparkles className="h-5 w-5 mr-2" />
+                  Generate Your First Proposal
+                </Link>
+              )}
+              <button
+                onClick={fetchProposals}
+                className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
               >
-                <Sparkles className="h-5 w-5 mr-2" />
-                Generate Your First Proposal
-              </Link>
-            )}
+                Refresh
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -317,17 +422,24 @@ const Proposals = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleViewProposal(proposal)}
-                      className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                      className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
                     >
-                      <Eye className="h-4 w-4 mr-2" />
+                      <Eye className="h-4 w-4 mr-1" />
                       View
                     </button>
                     <button
                       onClick={() => handleDownloadPDF(proposal)}
-                      className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                      className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
                     >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PDF
+                      <Download className="h-4 w-4 mr-1" />
+                      PDF
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProposal(proposal._id)}
+                      className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete proposal"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -339,60 +451,48 @@ const Proposals = () => {
         {/* Preview Modal */}
         {showPreview && selectedProposal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b">
+            <div className="bg-white rounded-xl max-w-6xl w-full max-h-[95vh] overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b bg-gray-50">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Proposal Preview
                 </h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleDownloadPDF(selectedProposal)}
-                    className="inline-flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </button>
-                  <button
-                    onClick={() => setShowPreview(false)}
-                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <span className="sr-only">Close</span>
-                    ✕
-                  </button>
-                </div>
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <span className="sr-only">Close</span>
+                  ✕
+                </button>
               </div>
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                <div className="prose max-w-none">
-                  <div className="mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                      {selectedProposal.title}
-                    </h1>
-                    <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 mr-1" />
-                        {selectedProposal.client.name}
-                      </div>
-                      {selectedProposal.client.company && (
-                        <div className="flex items-center">
-                          <Building2 className="h-4 w-4 mr-1" />
-                          {selectedProposal.client.company}
-                        </div>
-                      )}
-                      <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-1" />
-                        ${selectedProposal.project.budget.amount.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                    {selectedProposal.content}
-                  </div>
-                </div>
+              <div className="overflow-y-auto max-h-[calc(95vh-80px)]">
+                <ProposalViewer 
+                  proposal={selectedProposal}
+                  onDownload={handleDownloadPDF}
+                  onShare={(proposal) => {
+                    // Add share functionality here
+                    toast.success('Share functionality coming soon!')
+                  }}
+                  onEmail={(proposal) => {
+                    // Add email functionality here
+                    toast.success('Email functionality coming soon!')
+                  }}
+                />
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModal.open}
+        onClose={() => setDeleteModal({ open: false, proposal: null })}
+        onConfirm={confirmDelete}
+        title="Delete Proposal"
+        message={`Are you sure you want to delete "${deleteModal.proposal?.title}"?`}
+        itemName={deleteModal.proposal?.client?.name ? `Client: ${deleteModal.proposal.client.name}` : ''}
+        loading={deleting}
+      />
     </div>
   )
 }

@@ -115,7 +115,7 @@ const Home = () => {
               
               <div className="flex flex-col sm:flex-row gap-4 ">
                 <Link
-                  to={isAuthenticated ? "/generate-proposal" : "/register"}
+                  to={isAuthenticated ? "/proposal-generator" : "/register"}
                   className="btn-primary inline-flex text-center group"
                 >
                   {isAuthenticated ? 'Generate Proposal' : 'Get Started Free'}
@@ -366,7 +366,7 @@ const Home = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              to={isAuthenticated ? "/generate-proposal" : "/register"}
+              to={isAuthenticated ? "/proposal-generator" : "/register"}
               className="bg-white text-primary-600 hover:bg-gray-50 font-semibold py-3 px-8 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
             >
               {isAuthenticated ? 'Generate Your First Proposal' : 'Start Free Trial'}

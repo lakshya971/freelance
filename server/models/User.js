@@ -69,7 +69,31 @@ const userSchema = new mongoose.Schema({
   },
   resetPasswordToken: String,
   resetPasswordExpires: Date,
-  lastLoginAt: Date
+  lastLoginAt: Date,
+  refreshTokens: [{
+    token: {
+      type: String,
+      required: true
+    },
+    deviceInfo: {
+      userAgent: String,
+      ip: String,
+      deviceId: String
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+      expires: 2592000 // 30 days
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    }
+  }],
+  rememberMe: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true
 });
@@ -97,6 +121,44 @@ userSchema.methods.canCreateProposal = function() {
 userSchema.methods.incrementProposalUsage = async function() {
   this.subscription.proposalsUsed += 1;
   await this.save();
+};
+
+// Add refresh token
+userSchema.methods.addRefreshToken = async function(token, deviceInfo) {
+  // Remove old tokens for this device if any
+  this.refreshTokens = this.refreshTokens.filter(rt => 
+    !(rt.deviceInfo.deviceId === deviceInfo.deviceId && rt.isActive)
+  );
+  
+  // Add new token
+  this.refreshTokens.push({
+    token,
+    deviceInfo,
+    isActive: true
+  });
+  
+  // Keep only last 5 active tokens per user
+  const activeTokens = this.refreshTokens.filter(rt => rt.isActive);
+  if (activeTokens.length > 5) {
+    const oldestToken = activeTokens.sort((a, b) => a.createdAt - b.createdAt)[0];
+    oldestToken.isActive = false;
+  }
+  
+  await this.save();
+};
+
+// Remove refresh token
+userSchema.methods.removeRefreshToken = async function(token) {
+  const tokenIndex = this.refreshTokens.findIndex(rt => rt.token === token && rt.isActive);
+  if (tokenIndex > -1) {
+    this.refreshTokens[tokenIndex].isActive = false;
+    await this.save();
+  }
+};
+
+// Validate refresh token
+userSchema.methods.isValidRefreshToken = function(token) {
+  return this.refreshTokens.some(rt => rt.token === token && rt.isActive);
 };
 
 export default mongoose.model('User', userSchema);

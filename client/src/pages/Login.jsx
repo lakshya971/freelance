@@ -7,7 +7,8 @@ import toast from 'react-hot-toast'
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    rememberMe: false
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -23,7 +24,7 @@ const Login = () => {
     setLoading(true)
 
     try {
-      const result = await login(formData.email, formData.password)
+      const result = await login(formData.email, formData.password, formData.rememberMe)
       if (result.success) {
         navigate(from, { replace: true })
       }
@@ -35,9 +36,10 @@ const Login = () => {
   }
 
   const handleChange = (e) => {
+    const { name, value, type, checked } = e.target
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: type === 'checkbox' ? checked : value
     })
   }
 
@@ -114,12 +116,14 @@ const Login = () => {
               <div className="flex items-center">
                 <input
                   id="remember-me"
-                  name="remember-me"
+                  name="rememberMe"
                   type="checkbox"
+                  checked={formData.rememberMe}
+                  onChange={handleChange}
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                  Remember me
+                  Remember me for 30 days
                 </label>
               </div>
 

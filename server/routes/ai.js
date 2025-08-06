@@ -2,6 +2,7 @@ import express from 'express';
 import OpenAI from 'openai';
 import { protect, restrictTo } from '../middleware/auth.js';
 import Proposal from '../models/Proposal.js';
+import ProposalTemplate from '../models/ProposalTemplate.js';
 
 const router = express.Router();
 
@@ -74,8 +75,8 @@ router.post('/generate-proposal', protect, restrictTo('freelancer'), async (req,
 
     console.log('✅ Request data validated. Constructing OpenAI prompt...');
 
-    // Construct the AI prompt
-    const prompt = `You are a professional freelance proposal writer. Create a comprehensive, compelling business proposal based on the following information:
+    // Construct the AI prompt for PDF-style formatting
+    const prompt = `You are an expert freelance proposal writer creating a professional business proposal. Generate content in a clean, structured format suitable for PDF-style presentation.
 
 CLIENT INFORMATION:
 - Client Name: ${clientName}
@@ -89,26 +90,89 @@ PROJECT DETAILS:
 - Budget: $${budget}
 ${additionalRequirements ? `- Additional Requirements: ${additionalRequirements}` : ''}
 
-Please create a professional proposal with the following structure:
+Create a professional proposal using this EXACT structure and formatting:
 
-1. **Executive Summary** - Brief overview and value proposition
-2. **Project Understanding** - Demonstrate clear understanding of client needs
-3. **Proposed Solution** - Detailed approach and methodology
-4. **Scope of Work** - Specific deliverables and milestones
-5. **Timeline & Process** - Project phases and estimated completion
-6. **Investment** - Pricing breakdown and payment terms
-7. **Why Choose Me** - Qualifications and unique value
-8. **Next Steps** - Clear call to action
+---
 
-Make the proposal:
-- Professional and persuasive
-- Tailored specifically to the client's needs
-- Results-oriented with clear benefits
-- Well-structured and easy to read
-- Include specific deliverables and timelines
-- Address potential concerns proactively
+PROPOSAL FOR: ${clientName}
+${clientCompany ? `COMPANY: ${clientCompany}` : ''}
+DATE: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
 
-Write in a confident, professional tone that builds trust and demonstrates expertise.`;
+---
+
+EXECUTIVE SUMMARY
+
+[Write 2-3 compelling paragraphs that summarize the project value proposition, your understanding of their needs, and the expected outcomes. Focus on benefits to the client.]
+
+---
+
+PROJECT UNDERSTANDING
+
+[Demonstrate clear understanding of the client's specific needs and challenges. Show that you've listened and understood their requirements.]
+
+---
+
+PROPOSED SOLUTION
+
+[Detail your approach and methodology. Break down into clear phases or components. Use bullet points and numbered lists for clarity.]
+
+---
+
+SCOPE OF WORK & DELIVERABLES
+
+[List specific deliverables in a clean, numbered format:
+1. [Deliverable 1]
+2. [Deliverable 2]
+3. [Deliverable 3]
+etc.]
+
+---
+
+PROJECT TIMELINE
+
+[Create a clear timeline with phases and milestones. Use this format:
+Week 1-2: [Phase name and activities]
+Week 3-4: [Phase name and activities]
+etc.]
+
+---
+
+INVESTMENT & PAYMENT TERMS
+
+Total Project Investment: $${budget}
+
+Payment Schedule:
+- 50% ($${Math.round(parseFloat(budget) * 0.5)}) - Upon project commencement
+- 50% ($${Math.round(parseFloat(budget) * 0.5)}) - Upon project completion
+
+[Include any additional payment terms or options]
+
+---
+
+WHY CHOOSE FREELANCEFLOW
+
+[List 4-6 compelling reasons with specific benefits and qualifications]
+
+---
+
+NEXT STEPS
+
+1. Review this proposal
+2. Schedule a brief discussion call
+3. Project kickoff within 3 business days of agreement
+4. Begin work immediately upon contract signing
+
+---
+
+This proposal is valid for 30 days from the date above.
+
+Requirements:
+- Use clear section headers with --- separators
+- Professional, confident tone
+- Specific, measurable deliverables
+- Clear value propositions
+- No filler content - every sentence should add value
+- Focus on client benefits and outcomes`;
 
     console.log('🔥 Calling OpenAI API...');
 
@@ -118,73 +182,128 @@ Write in a confident, professional tone that builds trust and demonstrates exper
     if (process.env.USE_MOCK_AI === 'true') {
       console.log('🎭 Using mock AI response for testing...');
       
-      // Generate a professional mock proposal
-      generatedContent = `# Executive Summary
-
-Dear ${clientName},
-
-Thank you for considering our services for your ${projectDescription.split(' ').slice(0, 5).join(' ')} project. We are excited about the opportunity to partner with ${clientCompany || 'your organization'} and deliver exceptional results within your $${budget} budget and ${timeline}-week timeline.
-
-## Project Understanding
-
-Based on our discussion, we understand that you need:
-${projectScope.split('\n').slice(0, 3).map(item => `• ${item.trim()}`).join('\n')}
-
-## Proposed Solution
-
-Our comprehensive approach includes:
-
-### Phase 1: Discovery & Planning (Week 1)
-• Requirements analysis and technical specification
-• Project roadmap and milestone definition
-• Risk assessment and mitigation strategies
-
-### Phase 2: Development & Implementation (Weeks 2-${Math.max(2, parseInt(timeline) - 1)})
-• Core system development
-• Feature implementation and testing
-• Regular progress updates and client feedback
-
-### Phase 3: Delivery & Launch (Week ${timeline})
-• Final testing and quality assurance
-• Deployment and go-live support
-• Documentation and training delivery
-
-## Scope of Work
-
-**Deliverables:**
-${projectScope.split('\n').map((item, index) => `${index + 1}. ${item.trim()}`).join('\n')}
-
-**Timeline:** ${timeline} weeks from project kickoff
-**Budget:** $${budget} USD
-
-## Investment Breakdown
-
-• Development: ${Math.round(parseFloat(budget) * 0.7)} USD (70%)
-• Project Management: ${Math.round(parseFloat(budget) * 0.2)} USD (20%)
-• Testing & QA: ${Math.round(parseFloat(budget) * 0.1)} USD (10%)
-
-**Payment Terms:** 50% upfront, 50% upon completion
-
-## Why Choose Our Team
-
-• 5+ years of experience in similar projects
-• Proven track record of on-time delivery
-• Comprehensive post-launch support
-• Transparent communication throughout the project
-
-## Next Steps
-
-1. **Project Kickoff:** Schedule within 3 business days of agreement
-2. **Regular Updates:** Weekly progress reports and demos
-3. **Final Delivery:** Complete project within ${timeline} weeks
-
-We're confident this proposal meets your requirements and budget. We look forward to discussing this opportunity further and answering any questions you may have.
-
-Best regards,
-FreelanceFlow Team
+      // Generate a professional mock proposal in PDF style
+      generatedContent = `PROPOSAL FOR: ${clientName}
+${clientCompany ? `COMPANY: ${clientCompany}` : ''}
+DATE: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
 
 ---
-*This proposal is valid for 30 days from the date of submission.*`;
+
+EXECUTIVE SUMMARY
+
+Thank you for considering FreelanceFlow for your ${projectDescription.split(' ').slice(0, 5).join(' ')} project. We understand the importance of delivering exceptional results that drive real business value. This proposal outlines our comprehensive approach to ${projectDescription.split(' ').slice(0, 3).join(' ')}, designed to exceed your expectations within your $${budget} budget and ${timeline} timeline.
+
+Our proven methodology combines industry best practices with innovative solutions, ensuring your project not only meets but surpasses your objectives. We're committed to transparent communication, on-time delivery, and building a long-term partnership that supports your continued success.
+
+---
+
+PROJECT UNDERSTANDING
+
+Based on our discussion, we recognize that you need ${projectScope.split('\n').slice(0, 2).map(item => item.trim()).join(' and ')}. We understand the critical importance of ${projectDescription.split(' ').slice(-5).join(' ')} and how this project will impact your business operations.
+
+Your specific requirements include delivering a solution that balances quality, efficiency, and cost-effectiveness while maintaining the highest professional standards throughout the development process.
+
+---
+
+PROPOSED SOLUTION
+
+Our comprehensive approach is structured in three distinct phases:
+
+**Phase 1: Discovery & Foundation**
+- Detailed requirements analysis and technical specification
+- Project architecture and system design
+- Risk assessment and mitigation planning
+- Resource allocation and timeline optimization
+
+**Phase 2: Development & Implementation**
+- Core system development using industry best practices
+- Iterative development with regular client feedback
+- Quality assurance and testing protocols
+- Performance optimization and security implementation
+
+**Phase 3: Delivery & Support**
+- Final testing and quality validation
+- System deployment and go-live support
+- Documentation and training delivery
+- Post-launch support and optimization
+
+---
+
+SCOPE OF WORK & DELIVERABLES
+
+${projectScope.split('\n').map((item, index) => `${index + 1}. ${item.trim()}`).join('\n')}
+
+**Additional Deliverables:**
+${projectScope.split('\n').length + 1}. Comprehensive project documentation
+${projectScope.split('\n').length + 2}. Training materials and user guides
+${projectScope.split('\n').length + 3}. 30-day post-launch support
+
+---
+
+PROJECT TIMELINE
+
+**Week 1-2: Discovery & Planning**
+Initial project setup, requirements gathering, and technical specification development.
+
+**Week 3-${Math.max(3, parseInt(timeline) - 2)}: Development Phase**
+Core development work, feature implementation, and regular progress reviews.
+
+**Week ${Math.max(4, parseInt(timeline) - 1)}-${timeline}: Testing & Delivery**
+Final testing, quality assurance, deployment, and project handover.
+
+**Ongoing: Support & Optimization**
+Continuous support and performance monitoring for optimal results.
+
+---
+
+INVESTMENT & PAYMENT TERMS
+
+Total Project Investment: $${budget}
+
+**Payment Schedule:**
+- 50% ($${Math.round(parseFloat(budget) * 0.5)}) - Upon project commencement
+- 50% ($${Math.round(parseFloat(budget) * 0.5)}) - Upon project completion
+
+**Investment Breakdown:**
+- Development & Implementation: ${Math.round(parseFloat(budget) * 0.70)}$ (70%)
+- Project Management: $${Math.round(parseFloat(budget) * 0.20)} (20%)
+- Testing & Quality Assurance: $${Math.round(parseFloat(budget) * 0.10)} (10%)
+
+All payments can be made via bank transfer, PayPal, or other agreed methods.
+
+---
+
+WHY CHOOSE FREELANCEFLOW
+
+✓ **Proven Track Record**: 5+ years of successful project delivery with 98% client satisfaction rate
+
+✓ **Expert Team**: Certified professionals with extensive experience in your industry
+
+✓ **Quality Assurance**: Rigorous testing protocols ensure bug-free, high-performance solutions
+
+✓ **Transparent Communication**: Regular updates, progress reports, and open communication channels
+
+✓ **On-Time Delivery**: Proven methodology ensures projects are completed on schedule
+
+✓ **Ongoing Support**: Comprehensive post-launch support and maintenance services
+
+---
+
+NEXT STEPS
+
+1. **Review this proposal** and let us know if you have any questions or require clarifications
+2. **Schedule a brief discussion call** to finalize any remaining details
+3. **Project kickoff** within 3 business days of signed agreement
+4. **Begin development** immediately with regular progress updates
+
+We're excited about the opportunity to work with ${clientCompany || 'you'} and deliver exceptional results for your ${projectDescription.split(' ').slice(0, 3).join(' ')} project.
+
+---
+
+This proposal is valid for 30 days from the date above.
+
+Best regards,
+FreelanceFlow Development Team`;
 
       console.log('✅ Mock AI response generated');
       console.log('📝 Generated content preview:', generatedContent.substring(0, 200) + '...');

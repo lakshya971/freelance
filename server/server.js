@@ -16,17 +16,23 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 
 // Import routes AFTER env variables are loaded
 import authRoutes from './routes/auth.js';
 import proposalRoutes from './routes/proposals.js';
+import templateRoutes from './routes/templates.js';
 import userRoutes from './routes/users.js';
 import aiRoutes from './routes/ai.js';
-
 import stripeRoutes from './routes/stripe.js';
 import clientRoutes from './routes/clients.js';
 import projectRoutes from './routes/projects.js';
 import invoiceRoutes from './routes/invoices.js';
+import taskRoutes from './routes/tasks.js';
+import notificationRoutes from './routes/notifications.js';
+import clientPortalRoutes from './routes/clientPortal.js';
+import analyticsRoutes from './routes/analytics.js';
+import crmRoutes from './routes/crm.js';
 import chatRoutes from './routes/chat.js';
 
 const app = express();
@@ -52,6 +58,7 @@ app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // Add cookie parser middleware
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
@@ -61,12 +68,17 @@ mongoose.connect(process.env.MONGODB_URI)
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/proposals', proposalRoutes);
+app.use('/api/templates', templateRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/ai', aiRoutes);
-
 app.use('/api/clients', clientRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/client-portal', clientPortalRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/crm', crmRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/stripe', stripeRoutes);
 

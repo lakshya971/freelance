@@ -40,7 +40,7 @@ function App() {
             
             {/* Dashboard Route (public for testing) */}
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/generate-proposal" element={
+            <Route path="/proposal-generator" element={
               <ProtectedRoute>
                 <ProposalGenerator />
               </ProtectedRoute>

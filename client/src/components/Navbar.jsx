@@ -40,7 +40,7 @@ const Navbar = () => {
     { name: 'Projects', href: '/projects', icon: FolderKanban },
     { name: 'Clients', href: '/clients', icon: Users },
     { name: 'Chat', href: '/chat', icon: Sparkles },
-    { name: 'Generate Proposal', href: '/generate-proposal', icon: Sparkles },
+    { name: 'Generate Proposal', href: '/proposal-generator', icon: Sparkles },
     { name: 'Profile', href: '/profile', icon: User },
   ]
 
